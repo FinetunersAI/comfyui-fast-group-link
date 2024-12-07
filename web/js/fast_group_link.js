@@ -14,8 +14,8 @@ app.registerExtension({
 
             // Initialize properties
             this.properties = this.properties || {};
-            this.properties["masterGroup"] = "";
-            this.properties["slaveGroup"] = "";
+            this.properties["masterGroup"] = this.properties["masterGroup"] || "";
+            this.properties["slaveGroup"] = this.properties["slaveGroup"] || "";
             this.properties["showNav"] = true;
             this.serialize_widgets = true;
             this.size = [240, 50];  // Start with collapsed size
@@ -95,20 +95,7 @@ app.registerExtension({
                 if (local_pos[1] >= y && local_pos[1] <= y + 20 &&
                     local_pos[0] >= this.size[0] - 45) {
                     this.toggleValue = !this.toggleValue;
-                    if (this.masterGroup) {
-                        this.masterGroup.recomputeInsideNodes();
-                        for (const node of this.masterGroup._nodes) {
-                            node.mode = (this.toggleValue ? this.modeOn : this.modeOff);
-                        }
-                        const slaveGroup = this.graph._groups.find(g => g.title === this.properties["slaveGroup"]);
-                        if (slaveGroup) {
-                            slaveGroup.recomputeInsideNodes();
-                            for (const node of slaveGroup._nodes) {
-                                node.mode = (this.toggleValue ? this.modeOn : this.modeOff);
-                            }
-                        }
-                        app.graph.setDirtyCanvas(true, false);
-                    }
+                    this.updateGroupStates();
                     return true;
                 }
             };
@@ -122,6 +109,31 @@ app.registerExtension({
         nodeType.prototype.onAdded = function(graph) {
             this.graph = graph;
             this.refreshWidgets();
+            // Initial state setup
+            this.updateGroupStates();
+        };
+
+        nodeType.prototype.updateGroupStates = function() {
+            if (!this.graph) return;
+
+            const masterGroup = this.graph._groups.find(g => g.title === this.properties["masterGroup"]);
+            const slaveGroup = this.graph._groups.find(g => g.title === this.properties["slaveGroup"]);
+
+            if (masterGroup) {
+                masterGroup.recomputeInsideNodes();
+                for (const node of masterGroup._nodes) {
+                    node.mode = (this.toggleValue ? this.modeOn : this.modeOff);
+                }
+            }
+
+            if (slaveGroup) {
+                slaveGroup.recomputeInsideNodes();
+                for (const node of slaveGroup._nodes) {
+                    node.mode = (this.toggleValue ? this.modeOn : this.modeOff);
+                }
+            }
+
+            app.graph.setDirtyCanvas(true, false);
         };
 
         nodeType.prototype.refreshWidgets = function() {
@@ -139,13 +151,40 @@ app.registerExtension({
             // Add master group selection
             const masterWidget = this.addWidget("combo", "Master Group", this.properties["masterGroup"], (v) => {
                 this.properties["masterGroup"] = v;
-                this.masterGroup = this.graph._groups.find(g => g.title === v);
+                this.updateGroupStates();
             }, { values: groupTitles });
             
             // Add slave group selection
             const slaveWidget = this.addWidget("combo", "Slave Group", this.properties["slaveGroup"], (v) => {
                 this.properties["slaveGroup"] = v;
+                this.updateGroupStates();
             }, { values: groupTitles });
+        };
+
+        // Handle graph reloading
+        nodeType.prototype.onConfigure = function(info) {
+            // Restore properties
+            if (info.properties) {
+                this.properties = {...info.properties};
+            }
+            // Restore toggle state
+            if (info.toggleValue !== undefined) {
+                this.toggleValue = info.toggleValue;
+            }
+            // Update states after loading
+            setTimeout(() => {
+                this.updateGroupStates();
+            }, 100);
+        };
+
+        // Save additional state
+        const onSerialize = nodeType.prototype.onSerialize;
+        nodeType.prototype.onSerialize = function(info) {
+            if (onSerialize) {
+                onSerialize.apply(this, arguments);
+            }
+            // Save toggle state
+            info.toggleValue = this.toggleValue;
         };
     }
 });
