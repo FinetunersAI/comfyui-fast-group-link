@@ -4,7 +4,7 @@
   "author": "FinetunersAI",
   "version": "1.0.0",
   "license": "MIT",
+  "repository": "https://github.com/FinetunersAI/fast-group-link",
   "tags": ["groups", "workflow", "control", "utility"],
-  "dependencies": [],
-  "reference": "https://github.com/rgthree/rgthree-comfy"
+  "dependencies": []
 }
