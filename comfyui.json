@@ -1,0 +1,10 @@
+{
+  "name": "Fast Group Link",
+  "description": "Link and control ComfyUI groups with a simple ON/OFF toggle. Control multiple groups at once with an easy-to-use interface.",
+  "author": "FinetunersAI",
+  "version": "1.0.0",
+  "license": "MIT",
+  "tags": ["groups", "workflow", "control", "utility"],
+  "dependencies": [],
+  "reference": "https://github.com/rgthree/rgthree-comfy"
+}
