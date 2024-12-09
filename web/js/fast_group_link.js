@@ -16,9 +16,8 @@ app.registerExtension({
             this.properties = this.properties || {};
             this.properties["masterGroup"] = this.properties["masterGroup"] || "";
             this.properties["slaveGroup"] = this.properties["slaveGroup"] || "";
-            this.properties["showNav"] = true;
             this.serialize_widgets = true;
-            this.size = [240, 50];  // Start with collapsed size
+            this.size = [240, 120];  // Fixed expanded size
             this.modeOn = LiteGraph.ALWAYS;
             this.modeOff = LiteGraph.NEVER;
             
@@ -35,31 +34,18 @@ app.registerExtension({
 
             // Store states
             this.toggleValue = false;
-            this.showGroups = false;  // Start collapsed
+            this.showGroups = true;  // Always expanded
 
             // Override the node's drawing function
             this.onDrawForeground = function(ctx) {
-                // Update node size based on state
-                this.size[1] = this.showGroups ? 120 : 50;
-
-                // Hide/show widgets
-                for (const w of this.widgets || []) {
-                    if (w.name === "Master Group" || w.name === "Slave Group") {
-                        w.hidden = !this.showGroups;
-                    }
-                }
-
-                const y = this.showGroups ? this.size[1] - 35 : 15;
-                
-                // Draw expand/collapse triangle
-                ctx.fillStyle = "#fff";
+                // Draw background
+                ctx.fillStyle = this.properties["bgcolor"] || "#454545";
                 ctx.beginPath();
-                ctx.moveTo(20, y + 5);
-                ctx.lineTo(30, y + 10);
-                ctx.lineTo(20, y + 15);
-                ctx.closePath();
+                ctx.roundRect(0, 0, this.size[0], this.size[1], this.round_radius);
                 ctx.fill();
 
+                const y = 15;
+                
                 // Draw ON/OFF text
                 ctx.fillStyle = "#fff";
                 ctx.textAlign = "center";
@@ -74,25 +60,24 @@ app.registerExtension({
                 // Draw toggle circle
                 ctx.fillStyle = this.toggleValue ? "#4CAF50" : "#f44336";
                 ctx.beginPath();
-                const toggleRadius = 8;
-                ctx.arc(this.size[0] - 23, y + 10, toggleRadius, 0, Math.PI * 2);
+                ctx.arc(this.toggleValue ? this.size[0] - 23 : this.size[0] - 37, y + 10, 8, 0, Math.PI * 2);
                 ctx.fill();
+
+                // Draw widgets
+                if (this.widgets) {
+                    for (let i = 0; i < this.widgets.length; ++i) {
+                        let w = this.widgets[i];
+                        w.draw(ctx, this);
+                    }
+                }
             };
 
             // Handle mouse clicks
             this.onMouseDown = function(e, local_pos) {
-                const y = this.showGroups ? this.size[1] - 35 : 15;
+                const y = 15;
                 
-                // Handle expand/collapse triangle click
-                if (local_pos[1] >= y && local_pos[1] <= y + 20 &&
-                    local_pos[0] >= 15 && local_pos[0] <= 35) {
-                    this.showGroups = !this.showGroups;
-                    this.setDirtyCanvas(true, true);
-                    return true;
-                }
-
                 // Handle toggle click
-                if (local_pos[1] >= y && local_pos[1] <= y + 20 &&
+                if (local_pos[1] >= y - 10 && local_pos[1] <= y + 20 &&
                     local_pos[0] >= this.size[0] - 45) {
                     this.toggleValue = !this.toggleValue;
                     this.updateGroupStates();
@@ -188,3 +173,4 @@ app.registerExtension({
         };
     }
 });
+
